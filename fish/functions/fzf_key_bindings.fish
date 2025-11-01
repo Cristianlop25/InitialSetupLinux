@@ -1,1 +1,0 @@
-/home/critian/.fzf/shell/key-bindings.fish
