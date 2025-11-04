@@ -11,12 +11,13 @@ vim.o.ignorecase = true
 vim.o.hlsearch = false
 vim.o.signcolumn = 'yes'
 
-vim.cmd.colorscheme('retrobox')
+-- vim.cmd.colorscheme('retrobox')
+vim.cmd.colorscheme('gruvbox')
+
 -- Catppuccin theme
 -- vim.g.catppuccin_flavour = "macchiato" -- latte, frappe, macchiato, mocha
 -- require("catppuccin").setup()
 -- vim.cmd.colorscheme("catppuccin")
-
 
 vim.keymap.set({'n', 'x'}, 'gy', '"+y', {desc = 'Copy to clipboard'})
 vim.keymap.set({'n', 'x'}, 'gp', '"+p', {desc = 'Paste clipboard text'})
@@ -57,34 +58,32 @@ vim.api.nvim_create_autocmd("LspAttach", {
   end
 })
 
--- QML Language Server - Qt 6.5.7
+-- QML LS
 vim.lsp.config("qmlls", {
   cmd = { "/opt/Qt/6.5.7/gcc_64/bin/qmlls" },
   filetypes = { "qml", "javascript" },
-  root_markers = { "CMakeLists.txt", "package.json", ".git" },
-
+  root_markers = { "CMakeLists.txt", ".git" },
   settings = {
     QMLLS = {
       importPaths = {
         "/opt/Qt/6.5.7/gcc_64/qml",
         "/opt/Qt/6.5.7/gcc_64/qml/QtQuick",
-        "/opt/Qt/6.5.7/gcc_64/qml/Qt",         -- general Qt modules
+        "/opt/Qt/6.5.7/gcc_64/qml/Qt",
       },
       docDir = "/opt/Qt/Docs/Qt-6.5.7",
-      noCmakeCalls = true, -- Recommended for Neovim; prevents CMake spam
+      noCmakeCalls = true,
     },
   },
 })
 
--- Enable QML LS
-vim.lsp.enable({ "qmlls" })
 
--- Qt C++ (clangd)
+vim.lsp.enable({"qmlls"})
+
+-- Clangd config
 vim.lsp.config("clangd", {
-  cmd = { "clangd" },
-  filetypes = { "c", "cpp", "objc", "objcpp", "h", "hpp" },
-  root_markers = { "CMakeLists.txt", "compile_commands.json", ".git" },
-  capabilities = vim.lsp.protocol.make_client_capabilities(),
+  cmd = { "clangd", "--clang-tidy", "--fallback-style=none" },
+  filetypes = { "c", "cpp", "objc", "objcpp", "cuda" },
+  root_markers = { "compile_commands.json", ".git" },
   settings = {
     clangd = {
       fallbackFlags = {
@@ -95,10 +94,15 @@ vim.lsp.config("clangd", {
         "-I/opt/Qt/6.5.7/gcc_64/include/QtWidgets",
       }
     }
-  }
+  },
+	on_attach = function(client, bufnr)
+  client.server_capabilities.documentFormattingProvider = true
+end
+
 })
 
-vim.lsp.enable({ "clangd" })
+vim.lsp.enable({"clangd"})
+
 
 vim.lsp.config('tsserver', {
   cmd = { "typescript-language-server", "--stdio" },
@@ -111,21 +115,40 @@ vim.lsp.enable({'gopls', 'angularls', 'tsserver'})
 -- Utility: format the current buffer with Prettier CLI
 local function prettier_format()
   local filepath = vim.fn.expand("%:p")
-  local cmd = { "prettier", "--write", filepath }
 
-  -- Save any unsaved changes before formatting
-  vim.cmd("write")
+  local prettier = vim.fn.executable("./node_modules/.bin/prettier") == 1
+      and "./node_modules/.bin/prettier"
+      or "npx prettier"
 
-  local result = vim.fn.system(cmd)
+  local cmd = prettier .. " --write " .. vim.fn.shellescape(filepath)
+  local res = vim.fn.system(cmd)
 
   if vim.v.shell_error ~= 0 then
-    vim.notify("Prettier failed: " .. result, vim.log.levels.ERROR)
+    vim.notify("Prettier failed: " .. res, vim.log.levels.ERROR)
   else
+    vim.cmd("silent! edit!") -- reload buffer only
     vim.notify("Prettier formatted " .. filepath)
-    -- reload the buffer after formatting
-    vim.cmd("edit!")
   end
 end
+
+vim.lsp.enable({ "lua_ls" })
+
+vim.api.nvim_create_autocmd("LspAttach", {
+callback = function(ev)
+    local ft = vim.bo[ev.buf].filetype
+    if ft == "typescript" or ft == "typescriptreact" or ft == "javascript" or ft == "javascriptreact" then
+      return -- skip format for TS/JS, Prettier will handle it
+    end
+
+    vim.api.nvim_create_autocmd("BufWritePre", {
+      buffer = ev.buf,
+      callback = function()
+        vim.lsp.buf.format({ async = false })
+      end,
+    })
+  end,
+})
+
 
 -- Create :Prettier command
 vim.api.nvim_create_user_command("Prettier", prettier_format, {})
@@ -188,4 +211,63 @@ vim.keymap.set('n', '<leader>cs', '<cmd>Codeium Status<cr>', {desc = 'Codeium St
 vim.keymap.set("i", "<C-l>", function()
   return vim.fn["codeium#Accept"]()
 end, { expr = true })
+
+-- Lazygit
+require("toggleterm").setup({
+  open_mapping = [[<c-\>]],
+  direction = "float",
+})
+
+-- Lazygit keybinding
+vim.keymap.set("n", "<leader>lg", function()
+require("toggleterm.terminal").Terminal
+    :new({ cmd = "lazygit", hidden = true, direction = "float" })
+    :toggle()
+end, { desc = "Open LazyGit" })
+
+-- Gitsigns with Nerd Font icons
+local ok, gitsigns = pcall(require, "gitsigns")
+if not ok then
+  vim.notify("Gitsigns not found", vim.log.levels.WARN)
+  return
+end
+
+gitsigns.setup({
+  signs = {
+    add          = { text = "│" },
+    change       = { text = "│" },
+    delete       = { text = "" },
+    topdelete    = { text = "" },
+    changedelete = { text = "│" },
+    untracked    = { text = "│" },
+  },
+
+  signcolumn = true,
+  numhl = false,
+  linehl = false,
+  word_diff = false,
+
+  -- live blame inline on cursor
+  current_line_blame = false,
+  current_line_blame_opts = {
+    virt_text = true,
+    virt_text_pos = "eol",
+    delay = 200,
+  },
+
+  -- Git diff preview + actions
+  preview_config = {
+    border = "rounded",
+  },
+})
+
+-- Qt run compile_commands
+require("user.build")
+vim.keymap.set("n", "<leader>bu", ":Build<CR>", { desc = "Build project" })
+vim.keymap.set("n", "<leader>cl", ":Clean<CR>", { desc = "Clean project" })
+vim.keymap.set("n", "<leader>eol", ":RunEol<CR>", { desc = "Run EOL app" })
+vim.keymap.set("n", "<leader>hmi", ":RunCphmi<CR>", { desc = "Run CPHMI app" })
+vim.keymap.set("n", "<leader>fb", ":FirstBuild<CR>", { desc = "First cmake build" })
+vim.keymap.set("n", "<leader>fs", ":FirstBuildSelect<CR>", { desc = "Select platform & FirstBuild" })
+vim.keymap.set("n", "<leader>br", ":BuildRunCphmi<CR>", { desc = "Build and Run CPHMI" })
 
