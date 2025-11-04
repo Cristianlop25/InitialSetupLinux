@@ -1,6 +1,5 @@
-
 vim.o.number = true
-vim.opt.relativenumber = true 
+vim.opt.relativenumber = true
 vim.o.wrap = false
 vim.o.cursorline = true
 
@@ -20,24 +19,23 @@ vim.cmd.colorscheme('gruvbox')
 -- require("catppuccin").setup()
 -- vim.cmd.colorscheme("catppuccin")
 
-vim.keymap.set({'n', 'x'}, 'gy', '"+y', {desc = 'Copy to clipboard'})
-vim.keymap.set({'n', 'x'}, 'gp', '"+p', {desc = 'Paste clipboard text'})
+vim.keymap.set({ 'n', 'x' }, 'gy', '"+y', { desc = 'Copy to clipboard' })
+vim.keymap.set({ 'n', 'x' }, 'gp', '"+p', { desc = 'Paste clipboard text' })
 
 vim.g.mapleader = ' '
 
-vim.keymap.set('n', '<leader>w', '<cmd>write<cr>', {desc = 'Save file'})
-vim.keymap.set('n', '<leader>q', '<cmd>quitall<cr>', {desc = 'Exit vim'})
-vim.keymap.set("n", "<leader>bd", ":bnext | bdelete#<CR>", { desc = "Close buffer but keep window" })
+vim.keymap.set('n', '<leader>w', '<cmd>write<cr>', { desc = 'Save file' })
+vim.keymap.set('n', '<leader>q', '<cmd>quitall<cr>', { desc = 'Exit vim' })
+vim.keymap.set('n', '<leader>bd', ':bnext | bdelete#<CR>', { desc = 'Close buffer but keep window' })
 
 require('mini.files').setup({})
-vim.keymap.set('n', '<leader>e', '<cmd>lua MiniFiles.open()<cr>', {desc = 'File explorer'})
-require('mini.icons').setup({style = 'ascii'})
+vim.keymap.set('n', '<leader>e', '<cmd>lua MiniFiles.open()<cr>', { desc = 'File explorer' })
+require('mini.icons').setup({ style = 'ascii' })
 
 require('mini.pick').setup({})
-vim.keymap.set('n', '<leader><space>', '<cmd>Pick buffers<cr>', {desc = 'Search open files'})
-vim.keymap.set('n', '<leader>ff', '<cmd>Pick files<cr>', {desc = 'Search all files'})
-vim.keymap.set('n', '<leader>fh', '<cmd>Pick help<cr>', {desc = 'Search help tags'})
-
+vim.keymap.set('n', '<leader><space>', '<cmd>Pick buffers<cr>', { desc = 'Search open files' })
+vim.keymap.set('n', '<leader>ff', '<cmd>Pick files<cr>', { desc = 'Search all files' })
+vim.keymap.set('n', '<leader>fh', '<cmd>Pick help<cr>', { desc = 'Search help tags' })
 
 require('mini.snippets').setup({})
 require('mini.completion').setup({})
@@ -47,10 +45,7 @@ vim.api.nvim_create_autocmd("LspAttach", {
   callback = function(ev)
     local opts = { buffer = ev.buf }
 
-    -- Go to definition
     vim.keymap.set("n", "gd", vim.lsp.buf.definition, opts)
-
-    -- More useful LSP keys (optional but recommended)
     vim.keymap.set("n", "gr", vim.lsp.buf.references, opts)
     vim.keymap.set("n", "gi", vim.lsp.buf.implementation, opts)
     vim.keymap.set("n", "K", vim.lsp.buf.hover, opts)
@@ -77,8 +72,7 @@ vim.lsp.config("qmlls", {
   },
 })
 
-
-vim.lsp.enable({"qmlls"})
+vim.lsp.enable({ "qmlls" })
 
 -- Clangd config
 vim.lsp.config("clangd", {
@@ -96,14 +90,12 @@ vim.lsp.config("clangd", {
       }
     }
   },
-	on_attach = function(client, bufnr)
-  client.server_capabilities.documentFormattingProvider = true
-end
-
+  on_attach = function(client, bufnr)
+    client.server_capabilities.documentFormattingProvider = true
+  end
 })
 
-vim.lsp.enable({"clangd"})
-
+vim.lsp.enable({ "clangd" })
 
 vim.lsp.config('tsserver', {
   cmd = { "typescript-language-server", "--stdio" },
@@ -111,7 +103,7 @@ vim.lsp.config('tsserver', {
   root_markers = { "package.json", "tsconfig.json", ".git" },
 })
 
-vim.lsp.enable({'gopls', 'angularls', 'tsserver'})
+vim.lsp.enable({ 'gopls', 'angularls', 'tsserver' })
 
 -- Utility: format the current buffer with Prettier CLI
 local function prettier_format()
@@ -127,7 +119,7 @@ local function prettier_format()
   if vim.v.shell_error ~= 0 then
     vim.notify("Prettier failed: " .. res, vim.log.levels.ERROR)
   else
-    vim.cmd("silent! edit!") -- reload buffer only
+    vim.cmd("silent! edit!")
     vim.notify("Prettier formatted " .. filepath)
   end
 end
@@ -135,10 +127,10 @@ end
 vim.lsp.enable({ "lua_ls" })
 
 vim.api.nvim_create_autocmd("LspAttach", {
-callback = function(ev)
+  callback = function(ev)
     local ft = vim.bo[ev.buf].filetype
     if ft == "typescript" or ft == "typescriptreact" or ft == "javascript" or ft == "javascriptreact" then
-      return -- skip format for TS/JS, Prettier will handle it
+      return
     end
 
     vim.api.nvim_create_autocmd("BufWritePre", {
@@ -150,26 +142,19 @@ callback = function(ev)
   end,
 })
 
-
--- Create :Prettier command
 vim.api.nvim_create_user_command("Prettier", prettier_format, {})
-
--- Keymap
 vim.keymap.set("n", "<leader>p", "<cmd>Prettier<CR>", { desc = "Format with Prettier" })
 
--- Autoformat before save
 vim.api.nvim_create_autocmd("BufWritePre", {
   pattern = { "*.js", "*.jsx", "*.ts", "*.tsx", "*.json", "*.css", "*.html", "*.md" },
   callback = prettier_format,
 })
 
--- Indent lines
-require("ibl").setup {
+require("ibl").setup({
   indent = { char = "│" },
   scope = { enabled = true },
-}
+})
 
--- Codeium setup
 vim.g.codeium_no_map_tab = 1
 require("codeium").setup({
   enable_chat = true,
@@ -186,8 +171,6 @@ cmp.setup({
   mapping = {
     ["<C-Space>"] = cmp.mapping.complete(),
     ["<CR>"] = cmp.mapping.confirm({ select = true }),
-
-    -- Navigation
     ["<Tab>"] = cmp.mapping(function(fallback)
       if cmp.visible() then
         cmp.select_next_item()
@@ -195,7 +178,6 @@ cmp.setup({
         fallback()
       end
     end, { "i", "s" }),
-
     ["<S-Tab>"] = cmp.mapping(function(fallback)
       if cmp.visible() then
         cmp.select_prev_item()
@@ -206,27 +188,23 @@ cmp.setup({
   },
 })
 
--- Codeium keymaps (optional)
-vim.keymap.set('n', '<leader>ca', '<cmd>Codeium Auth<cr>', {desc = 'Codeium Auth'})
-vim.keymap.set('n', '<leader>cs', '<cmd>Codeium Status<cr>', {desc = 'Codeium Status'})
+vim.keymap.set('n', '<leader>ca', '<cmd>Codeium Auth<cr>', { desc = 'Codeium Auth' })
+vim.keymap.set('n', '<leader>cs', '<cmd>Codeium Status<cr>', { desc = 'Codeium Status' })
 vim.keymap.set("i", "<C-l>", function()
   return vim.fn["codeium#Accept"]()
 end, { expr = true })
 
--- Lazygit
 require("toggleterm").setup({
   open_mapping = [[<c-\>]],
   direction = "float",
 })
 
--- Lazygit keybinding
 vim.keymap.set("n", "<leader>lg", function()
-require("toggleterm.terminal").Terminal
-    :new({ cmd = "lazygit", hidden = true, direction = "float" })
-    :toggle()
+  require("toggleterm.terminal").Terminal
+      :new({ cmd = "lazygit", hidden = true, direction = "float" })
+      :toggle()
 end, { desc = "Open LazyGit" })
 
--- Gitsigns with Nerd Font icons
 local ok, gitsigns = pcall(require, "gitsigns")
 if not ok then
   vim.notify("Gitsigns not found", vim.log.levels.WARN)
@@ -235,34 +213,28 @@ end
 
 gitsigns.setup({
   signs = {
-    add          = { text = "│" },
-    change       = { text = "│" },
-    delete       = { text = "" },
-    topdelete    = { text = "" },
+    add = { text = "│" },
+    change = { text = "│" },
+    delete = { text = "" },
+    topdelete = { text = "" },
     changedelete = { text = "│" },
-    untracked    = { text = "│" },
+    untracked = { text = "│" },
   },
-
   signcolumn = true,
   numhl = false,
   linehl = false,
   word_diff = false,
-
-  -- live blame inline on cursor
   current_line_blame = false,
   current_line_blame_opts = {
     virt_text = true,
     virt_text_pos = "eol",
     delay = 200,
   },
-
-  -- Git diff preview + actions
   preview_config = {
     border = "rounded",
   },
 })
 
--- Qt run compile_commands
 require("user.build")
 vim.keymap.set("n", "<leader>bu", ":Build<CR>", { desc = "Build project" })
 vim.keymap.set("n", "<leader>cl", ":Clean<CR>", { desc = "Clean project" })
