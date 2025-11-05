@@ -11,6 +11,10 @@ vim.o.ignorecase = true
 vim.o.hlsearch = false
 vim.o.signcolumn = 'yes'
 
+vim.opt.swapfile = false
+vim.opt.backup = false
+vim.opt.writebackup = false
+
 -- vim.cmd.colorscheme('retrobox')
 vim.cmd.colorscheme('gruvbox')
 
@@ -105,6 +109,22 @@ vim.lsp.config('tsserver', {
 
 vim.lsp.enable({ 'gopls', 'angularls', 'tsserver' })
 
+vim.api.nvim_create_autocmd("LspAttach", {
+  callback = function(ev)
+    local ft = vim.bo[ev.buf].filetype
+    if ft == "typescript" or ft == "typescriptreact" or ft == "javascript" or ft == "javascriptreact" then
+      return
+    end
+
+    vim.api.nvim_create_autocmd("BufWritePre", {
+      buffer = ev.buf,
+      callback = function()
+  				vim.lsp.buf.format({ async = false })
+      end,
+    })
+  end,
+})
+
 -- Utility: format the current buffer with Prettier CLI
 local function prettier_format()
   local filepath = vim.fn.expand("%:p")
@@ -124,28 +144,10 @@ local function prettier_format()
   end
 end
 
-vim.lsp.enable({ "lua_ls" })
-
-vim.api.nvim_create_autocmd("LspAttach", {
-  callback = function(ev)
-    local ft = vim.bo[ev.buf].filetype
-    if ft == "typescript" or ft == "typescriptreact" or ft == "javascript" or ft == "javascriptreact" then
-      return
-    end
-
-    vim.api.nvim_create_autocmd("BufWritePre", {
-      buffer = ev.buf,
-      callback = function()
-        vim.lsp.buf.format({ async = false })
-      end,
-    })
-  end,
-})
-
 vim.api.nvim_create_user_command("Prettier", prettier_format, {})
 vim.keymap.set("n", "<leader>p", "<cmd>Prettier<CR>", { desc = "Format with Prettier" })
 
-vim.api.nvim_create_autocmd("BufWritePre", {
+vim.api.nvim_create_autocmd("BufWritePost", {
   pattern = { "*.js", "*.jsx", "*.ts", "*.tsx", "*.json", "*.css", "*.html", "*.md" },
   callback = prettier_format,
 })
